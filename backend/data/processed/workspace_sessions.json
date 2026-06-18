@@ -1,0 +1,21 @@
+[
+  {
+    "id": "c51c2c10-1c9f-4b97-bbaa-9aa904d20eb0",
+    "created_at": "2026-06-18T14:38:16.376057+00:00",
+    "title": "Ask: consumer complaint",
+    "module": "ask-ai",
+    "query": "consumer complaint",
+    "answer": "To file a consumer complaint, you need to collect documents and submit the complaint to the commission [1]. \nthis is general information, not legal advice.",
+    "sources": [
+      {
+        "title": "How do I file a consumer complaint?",
+        "content": "Question: How do I file a consumer complaint?\nAnswer: Collect documents and submit the complaint to the commission.",
+        "category": "general",
+        "section": "General QA",
+        "score": 0.7141,
+        "dataset": "legal_qa"
+      }
+    ],
+    "notes": ""
+  }
+]
