@@ -10,12 +10,13 @@ services:
       - key: GROQ_API_KEY
         sync: false
 
-  # Frontend Static Site
-  - type: static
+  # Frontend Static Site (Web Service with static runtime)
+  - type: web
     name: lextamil-ai-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    publishPath: ./dist
     routes:
       # Route all /api/* calls to the backend web service
       - type: rewrite
