@@ -18,10 +18,6 @@ services:
     buildCommand: npm install && npm run build
     publishPath: ./dist
     routes:
-      # Route all /api/* calls to the backend web service
-      - type: rewrite
-        source: /api/*
-        destination: https://lextamil-ai-backend.onrender.com/api/*
       # SPA routing fallback: rewrite all other routes to index.html
       - type: rewrite
         source: /*
