@@ -20,7 +20,6 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://lextamil-ai-frontend-production.up.railway.app",
     ],
     allow_credentials=False,
     allow_methods=["*"],
