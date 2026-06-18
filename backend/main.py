@@ -18,7 +18,10 @@ app = FastAPI(title="Lextamil AI API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://lextamil-ai-frontend-production.up.railway.app",
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,14 +36,12 @@ class SearchRequest(BaseModel):
     category: str = "all"
     top_k: int = 6
 
-
 class DraftRequest(BaseModel):
     scenario: str
     objective: str
     key_facts: str
     desired_relief: str
     language: str = "english"
-
 
 class WorkspaceSaveRequest(BaseModel):
     title: str
@@ -50,14 +51,12 @@ class WorkspaceSaveRequest(BaseModel):
     sources: list[dict[str, Any]] = Field(default_factory=list)
     notes: str | None = None
 
-
 def _workspace_file() -> Path:
     p = Path(__file__).resolve().parent / "data" / "processed" / "workspace_sessions.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     if not p.exists():
         p.write_text("[]", encoding="utf-8")
     return p
-
 
 def _read_workspace() -> list[dict[str, Any]]:
     p = _workspace_file()
@@ -70,11 +69,9 @@ def _read_workspace() -> list[dict[str, Any]]:
         raise RuntimeError(f"Workspace JSON must contain a list: {p}")
     return data
 
-
 def _write_workspace(items: list[dict[str, Any]]) -> None:
     p = _workspace_file()
     p.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
-
 
 @app.get("/")
 def root():
@@ -110,11 +107,9 @@ def search(req: SearchRequest):
         ]
     }
 
-
 @app.get("/api/datasets")
 def datasets():
     return rag_service.get_dataset_overview()
-
 
 @app.post("/api/draft")
 def draft(req: DraftRequest):
@@ -127,13 +122,11 @@ def draft(req: DraftRequest):
     )
     return {"draft": draft_text}
 
-
 @app.get("/api/workspace/sessions")
 def list_workspace_sessions():
     sessions = _read_workspace()
     sessions.sort(key=lambda s: s.get("created_at", ""), reverse=True)
     return {"sessions": sessions}
-
 
 @app.post("/api/workspace/sessions")
 def create_workspace_session(req: WorkspaceSaveRequest):
@@ -152,14 +145,12 @@ def create_workspace_session(req: WorkspaceSaveRequest):
     _write_workspace(sessions)
     return {"saved": True, "session": session}
 
-
 @app.delete("/api/workspace/sessions/{session_id}")
 def delete_workspace_session(session_id: str):
     sessions = _read_workspace()
     remaining = [s for s in sessions if s.get("id") != session_id]
     _write_workspace(remaining)
     return {"deleted": len(remaining) != len(sessions)}
-
 
 @app.get("/api/workspace/export")
 def export_workspace_report():
