@@ -18,7 +18,7 @@ services:
     name: lextamil-ai-frontend
     env: static
     rootDir: frontend
-    buildCommand: npm install && npx vite build
+    buildCommand: npm install && node node_modules/vite/bin/vite.js build
     staticPublishPath: ./dist
     routes:
       - type: rewrite
