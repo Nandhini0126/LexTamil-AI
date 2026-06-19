@@ -115,28 +115,30 @@ class RAGService:
         return merged_docs
 
     def _index_docs(self):
-        texts = [f"{d.get('title', '')}. {d.get('content', '')}" for d in self.docs]
-        embeddings = embedding_service.encode(texts)
+        batch_size = 32
+        for start in range(0, len(self.docs), batch_size):
+            batch = self.docs[start : start + batch_size]
+            texts = [f"{d.get('title', '')}. {d.get('content', '')}" for d in batch]
+            embeddings = embedding_service.encode(texts)
 
-        ids = [str(d.get("id", i + 1)) for i, d in enumerate(self.docs)]
-        documents = texts
-        metadatas = [
-            {
-                "title": d.get("title", ""),
-                "category": d.get("category", "general"),
-                "section": d.get("section", "General"),
-                "content": d.get("content", ""),
-                "dataset": d.get("dataset", "unknown"),
-            }
-            for d in self.docs
-        ]
+            ids = [str(d.get("id", start + i + 1)) for i, d in enumerate(batch)]
+            metadatas = [
+                {
+                    "title": d.get("title", ""),
+                    "category": d.get("category", "general"),
+                    "section": d.get("section", "General"),
+                    "content": d.get("content", ""),
+                    "dataset": d.get("dataset", "unknown"),
+                }
+                for d in batch
+            ]
 
-        self.collection.add(
-            ids=ids,
-            documents=documents,
-            metadatas=metadatas,
-            embeddings=embeddings.tolist(),
-        )
+            self.collection.add(
+                ids=ids,
+                documents=texts,
+                metadatas=metadatas,
+                embeddings=embeddings.tolist(),
+            )
 
     def retrieve(self, query: str, top_k: int = 3, category: str | None = None, min_score: float | None = None):
         q_emb = embedding_service.encode([query])[0].tolist()
