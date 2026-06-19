@@ -2,24 +2,83 @@ import json
 import os
 from pathlib import Path
 
-import chromadb
 from groq import Groq
 
-from ml.embeddings import embedding_service
+
+import math
+import re
+
+class BM25Retriever:
+    def __init__(self, docs, k1=1.5, b=0.75):
+        self.docs = docs
+        self.k1 = k1
+        self.b = b
+        self.doc_len = []
+        self.corpus_size = len(docs)
+        self.avg_doc_len = 0
+        self.doc_term_freqs = []
+        self.idf = {}
+        self.initialize()
+
+    def _tokenize(self, text):
+        return re.findall(r'\w+', text.lower())
+
+    def initialize(self):
+        total_len = 0
+        df = {}
+        for doc in self.docs:
+            text = f"{doc.get('title', '')} {doc.get('content', '')}"
+            tokens = self._tokenize(text)
+            self.doc_len.append(len(tokens))
+            total_len += len(tokens)
+            
+            tf = {}
+            for token in tokens:
+                tf[token] = tf.get(token, 0) + 1
+            self.doc_term_freqs.append(tf)
+            
+            for token in tf.keys():
+                df[token] = df.get(token, 0) + 1
+                
+        self.avg_doc_len = total_len / self.corpus_size if self.corpus_size > 0 else 1
+        
+        for token, freq in df.items():
+            self.idf[token] = math.log((self.corpus_size - freq + 0.5) / (freq + 0.5) + 1.0)
+
+    def retrieve(self, query, top_k=3, category=None):
+        query_tokens = self._tokenize(query)
+        scores = []
+        
+        for i, doc in enumerate(self.docs):
+            if category and category != 'all' and doc.get('category') != category:
+                continue
+                
+            score = 0.0
+            tf = self.doc_term_freqs[i]
+            d_len = self.doc_len[i]
+            
+            for token in query_tokens:
+                if token in self.idf:
+                    f = tf.get(token, 0)
+                    idf_val = self.idf[token]
+                    num = f * (self.k1 + 1)
+                    denom = f + self.k1 * (1 - self.b + self.b * (d_len / self.avg_doc_len))
+                    score += idf_val * (num / denom)
+            
+            if score > 0:
+                scores.append((doc, score))
+            
+        scores.sort(key=lambda x: x[1], reverse=True)
+        return scores[:top_k]
 
 
 class RAGService:
-    MIN_SCORE = 0.45
+    MIN_SCORE = 0.5  # Adjusted threshold for BM25 match
 
     def __init__(self):
         self.dataset_overview = []
         self.docs = self._load_docs()
-        self.client = chromadb.Client()
-        self.collection = self.client.get_or_create_collection(
-            name="lextamil_docs",
-            metadata={"hnsw:space": "cosine"},
-        )
-        self._index_docs()
+        self.retriever = BM25Retriever(self.docs)
 
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
@@ -114,64 +173,22 @@ class RAGService:
 
         return merged_docs
 
-    def _index_docs(self):
-        batch_size = 32
-        for start in range(0, len(self.docs), batch_size):
-            batch = self.docs[start : start + batch_size]
-            texts = [f"{d.get('title', '')}. {d.get('content', '')}" for d in batch]
-            embeddings = embedding_service.encode(texts)
-
-            ids = [str(d.get("id", start + i + 1)) for i, d in enumerate(batch)]
-            metadatas = [
-                {
-                    "title": d.get("title", ""),
-                    "category": d.get("category", "general"),
-                    "section": d.get("section", "General"),
-                    "content": d.get("content", ""),
-                    "dataset": d.get("dataset", "unknown"),
-                }
-                for d in batch
-            ]
-
-            self.collection.add(
-                ids=ids,
-                documents=texts,
-                metadatas=metadatas,
-                embeddings=embeddings.tolist(),
-            )
-
     def retrieve(self, query: str, top_k: int = 3, category: str | None = None, min_score: float | None = None):
-        q_emb = embedding_service.encode([query])[0].tolist()
-
-        where = None
-        if category and category != "all":
-            where = {"category": category}
-
-        results = self.collection.query(
-            query_embeddings=[q_emb],
-            n_results=top_k,
-            where=where,
-        )
-
-        docs = results.get("documents", [[]])[0]
-        metas = results.get("metadatas", [[]])[0]
-        dists = results.get("distances", [[]])[0]
-
+        results = self.retriever.retrieve(query, top_k=top_k, category=category)
+        
         threshold = self.MIN_SCORE if min_score is None else min_score
-
         out = []
-        for _, meta, dist in zip(docs, metas, dists):
-            score = 1.0 - float(dist)
+        for doc, score in results:
             if score < threshold:
                 continue
             out.append(
                 {
-                    "title": meta.get("title", ""),
-                    "content": meta.get("content", ""),
-                    "category": meta.get("category", "general"),
-                    "section": meta.get("section", "General"),
+                    "title": doc.get("title", ""),
+                    "content": doc.get("content", ""),
+                    "category": doc.get("category", "general"),
+                    "section": doc.get("section", "General"),
                     "score": round(score, 4),
-                    "dataset": meta.get("dataset", "unknown"),
+                    "dataset": doc.get("dataset", "unknown"),
                 }
             )
 
