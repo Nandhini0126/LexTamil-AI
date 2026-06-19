@@ -14,12 +14,11 @@ services:
         value: 1
 
   # Frontend Static Site (Free)
-  - type: web
+  - type: static
     name: lextamil-ai-frontend
-    env: static
     rootDir: frontend
     buildCommand: npm install && npx vite build
-    staticPublishPath: ./dist
+    publishPath: dist
     routes:
       - type: rewrite
         source: /api/*
