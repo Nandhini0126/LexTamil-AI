@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Mic, MicOff } from 'lucide-react'
+import { API_URL } from '../api'
 
 export default function VoiceInput({ onText }) {
   const [recording, setRecording] = useState(false)
@@ -24,7 +25,7 @@ export default function VoiceInput({ onText }) {
         fd.append('audio', blob, 'voice.webm')
 
         try {
-          const res = await fetch('/api/transcribe', {
+          const res = await fetch(`${API_URL}/api/transcribe`, {
             method: 'POST',
             body: fd
           })

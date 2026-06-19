@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FileText, Save, Printer } from 'lucide-react'
+import { API_URL } from '../api'
 
 export default function Drafts() {
   const [scenario, setScenario] = useState('Consumer complaint')
@@ -18,7 +19,7 @@ export default function Drafts() {
     setError('')
     setStatus('')
     try {
-      const res = await fetch('/api/draft', {
+      const res = await fetch(`${API_URL}/api/draft`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,7 +43,7 @@ export default function Drafts() {
   const saveDraft = async () => {
     if (!draft.trim()) return
     try {
-      const res = await fetch('/api/workspace/sessions', {
+      const res = await fetch(`${API_URL}/api/workspace/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

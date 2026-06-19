@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Download, Trash2 } from 'lucide-react'
+import { API_URL } from '../api'
 
 export default function Workspace() {
   const [sessions, setSessions] = useState([])
@@ -10,7 +11,7 @@ export default function Workspace() {
     setLoading(true)
     setStatus('')
     try {
-      const res = await fetch('/api/workspace/sessions')
+      const res = await fetch(`${API_URL}/api/workspace/sessions`)
       const data = await res.json()
       setSessions(data.sessions || [])
     } catch {
@@ -26,7 +27,7 @@ export default function Workspace() {
 
   const removeSession = async id => {
     try {
-      await fetch(`/api/workspace/sessions/${id}`, { method: 'DELETE' })
+      await fetch(`${API_URL}/api/workspace/sessions/${id}`, { method: 'DELETE' })
       setSessions(prev => prev.filter(s => s.id !== id))
     } catch {
       setStatus('Could not delete session.')
@@ -35,7 +36,7 @@ export default function Workspace() {
 
   const exportReport = async () => {
     try {
-      const res = await fetch('/api/workspace/export')
+      const res = await fetch(`${API_URL}/api/workspace/export`)
       const data = await res.json()
       const blob = new Blob([data.report || ''], { type: 'text/plain;charset=utf-8' })
       const url = URL.createObjectURL(blob)

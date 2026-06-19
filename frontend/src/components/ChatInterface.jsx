@@ -3,6 +3,7 @@ import { Send } from 'lucide-react'
 import VoiceInput from './VoiceInput'
 import LoadingDots from './LoadingDots'
 import SourceCard from './SourceCard'
+import { API_URL } from '../api'
 
 export default function ChatInterface() {
   const [query, setQuery] = useState('')
@@ -11,7 +12,7 @@ export default function ChatInterface() {
 
   const saveToWorkspace = async message => {
     try {
-      await fetch('/api/workspace/sessions', {
+      await fetch(`${API_URL}/api/workspace/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -33,7 +34,7 @@ export default function ChatInterface() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/ask', {
+      const res = await fetch(`${API_URL}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query })

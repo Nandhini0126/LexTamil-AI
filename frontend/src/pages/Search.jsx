@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Database, Printer, Sparkles, TimerReset } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
+import { API_URL } from '../api'
 
 export default function Search() {
   const [results, setResults] = useState([])
@@ -17,7 +18,7 @@ export default function Search() {
   useEffect(() => {
     const loadDatasets = async () => {
       try {
-        const res = await fetch('/api/datasets')
+        const res = await fetch(`${API_URL}/api/datasets`)
         const data = await res.json()
         setCategories(data.categories || ['all'])
         setDatasets(data.datasets || [])
@@ -34,7 +35,7 @@ export default function Search() {
     setError('')
     setQuery(searchQuery)
     try {
-      const res = await fetch('/api/search', {
+      const res = await fetch(`${API_URL}/api/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: searchQuery, category, top_k: topK })
@@ -98,7 +99,7 @@ export default function Search() {
     const active = searchSessions.find(s => s.id === activeSessionId) || searchSessions[0]
     if (!active) return
     try {
-      await fetch('/api/workspace/sessions', {
+      await fetch(`${API_URL}/api/workspace/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
